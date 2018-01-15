@@ -7,6 +7,7 @@ import org.snmp4j.smi.*;
 import org.snmp4j.transport.DefaultUdpTransportMapping;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 public class SnmpClient {
 
@@ -19,6 +20,7 @@ public class SnmpClient {
     private TransportMapping transport = null;
     private static String oidValue = ".1.3.6.1.2.1.1.1.0";
     private static int snmpVersion = SnmpConstants.version1;
+    private static PDU pdu = null;
 
     public SnmpClient(String address) {
         this.address = address;
@@ -28,65 +30,48 @@ public class SnmpClient {
         transport = new DefaultUdpTransportMapping();
         transport.listen();
         snmp = new Snmp(transport);
+        pdu = new PDU();
     }
 
     public void getRequest() throws IOException {
-        System.out.println("Got Response from Agent");
-
         PDU responsePDU = getResponseEvent().getResponse();
-        if (responsePDU != null) {
-            int errorStatus = responsePDU.getErrorStatus();
-            int errorIndex = responsePDU.getErrorIndex();
-            String errorStatusText = responsePDU.getErrorStatusText();
-            if (errorStatus == PDU.noError) {
-                System.out.println("Snmp Get Response = " + responsePDU.getVariableBindings());
-            } else {
-                System.out.println("Error: Request Failed");
-                System.out.println("Error Status = " + errorStatus);
-                System.out.println("Error Index = " + errorIndex);
-                System.out.println("Error Status Text = " + errorStatusText);
-            }
-        } else {
-            System.out.println("Error: Response PDU is null");
-        }
+        System.out.println("\nResponse:\nGot Get Response from Agent...");
+        checkError(responsePDU);
     }
 
-    public void getNextRequest() throws IOException {
-        PDU pdu = new PDU();
-        pdu.add(new VariableBinding(new OID(oidValue)));
-        pdu.setRequestID(new Integer32(1));
+
+    public void getNextRequest(ArrayList<String> oidValues) throws IOException {
+        for (String value : oidValues) {
+            pdu.add(new VariableBinding(new OID(value)));
+        }
         pdu.setType(PDU.GETNEXT);
         ResponseEvent response = snmp.getNext(pdu, getTarget());
         if (response != null) {
             System.out.println("\nResponse:\nGot GetNext Response from Agent...");
             PDU responsePDU = response.getResponse();
-
-            if (responsePDU != null) {
-                int errorStatus = responsePDU.getErrorStatus();
-                int errorIndex = responsePDU.getErrorIndex();
-                String errorStatusText = responsePDU.getErrorStatusText();
-
-                if (errorStatus == PDU.noError) {
-                    System.out.println("Snmp GetNext Response for sysObjectID = " + responsePDU.getVariableBindings());
-                } else {
-                    System.out.println("Error: Request Failed");
-                    System.out.println("Error Status = " + errorStatus);
-                    System.out.println("Error Index = " + errorIndex);
-                    System.out.println("Error Status Text = " + errorStatusText);
-                }
-            } else {
-                System.out.println("Error: GetNextResponse PDU is null");
-            }
+            checkError(responsePDU);
         } else {
             System.out.println("Error: Agent Timeout... ");
         }
     }
 
+    public void setRequest(String oidValue, String newVariable) throws IOException {
+        OID oid = new OID(oidValue);
+        Variable var = new OctetString(newVariable);
+        VariableBinding variableBinding = new VariableBinding(oid, var);
+        pdu.add(variableBinding);
+        pdu.setType(PDU.SET);
+        ResponseEvent response = snmp.set(pdu, getTarget());
+        if (response != null) {
+            System.out.println("\nResponse:\nGot Snmp Set Response from Agent");
+            PDU responsePDU = response.getResponse();
+            checkError(responsePDU);
+        } else System.out.println("Error: Agent Timeout... ");
+    }
+
     public ResponseEvent getResponseEvent() throws IOException {
-        PDU pdu = new PDU();
         pdu.add(new VariableBinding(new OID(oidValue)));
         pdu.setType(PDU.GET);
-        pdu.setRequestID(new Integer32(1));
         System.out.println("Sending Request to Agent");
         ResponseEvent response = snmp.get(pdu, getTarget());
         if (response != null) {
@@ -104,8 +89,25 @@ public class SnmpClient {
         target.setAddress(targetAddress);
         target.setRetries(SNMP_RETRIES);
         target.setTimeout(SNMP_TIMEOUT);
-        target.setVersion(SnmpConstants.version2c);
         return target;
+    }
+
+    private void checkError(PDU responsePDU) {
+        if (responsePDU != null) {
+            int errorStatus = responsePDU.getErrorStatus();
+            int errorIndex = responsePDU.getErrorIndex();
+            String errorStatusText = responsePDU.getErrorStatusText();
+            if (errorStatus == PDU.noError) {
+                System.out.println("Snmp Response = " + responsePDU.getVariableBindings());
+            } else {
+                System.out.println("Error: Request Failed");
+                System.out.println("Error Status = " + errorStatus);
+                System.out.println("Error Index = " + errorIndex);
+                System.out.println("Error Status Text = " + errorStatusText);
+            }
+        } else {
+            System.out.println("Error: Response PDU is null");
+        }
     }
 
     public void stop() throws IOException {
@@ -121,4 +123,5 @@ public class SnmpClient {
             }
         }
     }
+
 }
