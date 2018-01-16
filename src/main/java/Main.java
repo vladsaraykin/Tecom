@@ -21,9 +21,9 @@ public class Main {
         try {
             snmpClient.start();
 //            snmpClient.getRequest();
-//            snmpClient.setRequest("1.3.6.1.2.1.1.1.0", "Printer HP Canon");
+            snmpClient.setRequest("1.3.6.1.2.1.1.5.0", "Printer HP Canon");
 //            snmpClient.getRequest();
-            snmpClient.getNextRequest(oidsList);
+//            snmpClient.getNextRequest(oidsList);
         } catch (RuntimeException e) {
             e.getStackTrace();
         }finally {

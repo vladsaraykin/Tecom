@@ -11,7 +11,8 @@ import java.util.ArrayList;
 
 public class SnmpClient {
 
-    private final static String SNMP_COMMUNITY = "public";
+    private final static String WRITE_COMMUNITY = "private";
+    private final static String READ_COMMUNITY = "public";
     private final static int SNMP_RETRIES = 3;
     private final static long SNMP_TIMEOUT = 1000L;
 
@@ -45,7 +46,7 @@ public class SnmpClient {
             pdu.add(new VariableBinding(new OID(value)));
         }
         pdu.setType(PDU.GETNEXT);
-        ResponseEvent response = snmp.getNext(pdu, getTarget());
+        ResponseEvent response = snmp.getNext(pdu, getTarget(READ_COMMUNITY));
         if (response != null) {
             System.out.println("\nResponse:\nGot GetNext Response from Agent...");
             PDU responsePDU = response.getResponse();
@@ -61,7 +62,7 @@ public class SnmpClient {
         VariableBinding variableBinding = new VariableBinding(oid, var);
         pdu.add(variableBinding);
         pdu.setType(PDU.SET);
-        ResponseEvent response = snmp.set(pdu, getTarget());
+        ResponseEvent response = snmp.set(pdu, getTarget(WRITE_COMMUNITY));
         if (response != null) {
             System.out.println("\nResponse:\nGot Snmp Set Response from Agent");
             PDU responsePDU = response.getResponse();
@@ -73,7 +74,7 @@ public class SnmpClient {
         pdu.add(new VariableBinding(new OID(oidValue)));
         pdu.setType(PDU.GET);
         System.out.println("Sending Request to Agent");
-        ResponseEvent response = snmp.get(pdu, getTarget());
+        ResponseEvent response = snmp.get(pdu, getTarget(READ_COMMUNITY));
         if (response != null) {
             return response;
         }
@@ -81,10 +82,10 @@ public class SnmpClient {
     }
 
 
-    public Target getTarget() {
+    public Target getTarget(String community) {
         Address targetAddress = GenericAddress.parse(address);
         CommunityTarget target = new CommunityTarget();
-        target.setCommunity(new OctetString(SNMP_COMMUNITY));
+        target.setCommunity(new OctetString(community));
         target.setVersion(snmpVersion);
         target.setAddress(targetAddress);
         target.setRetries(SNMP_RETRIES);
