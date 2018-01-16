@@ -7,26 +7,22 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 public class Main {
+
+    public static final String OID1 = ".1.3.6.1.2.1.1.1";
+    public static final String OID2 = ".1.3.6.1.2.1.1.7.0";
+
     public static void main(String[] args) throws InterruptedException, IOException {
 
         SnmpClient snmpClient = new SnmpClient("192.168.56.101/7166");
-        ArrayList<String> oidsList = new ArrayList<>();
-        oidsList.add(".1.3.6.1.2.1.1.1");
-        oidsList.add(".1.3.6.1.2.1.1.2");
-        oidsList.add(".1.3.6.1.2.1.1.3");
-        oidsList.add(".1.3.6.1.2.1.1.4");
-        oidsList.add(".1.3.6.1.2.1.1.5");
-        oidsList.add(".1.3.6.1.2.1.1.6");
-        oidsList.add(".1.3.6.1.2.1.1.7");
         try {
             snmpClient.start();
 //            snmpClient.getRequest();
-            snmpClient.setRequest("1.3.6.1.2.1.1.5.0", "Printer HP Canon");
-//            snmpClient.getRequest();
-//            snmpClient.getNextRequest(oidsList);
+//            snmpClient.setRequest("1.3.6.1.2.1.1.5.0", "Printer HP Canon");
+//            snmpClient.getNextRequest(OID1);
+            snmpClient.getRangeValues(OID1, OID2);
         } catch (RuntimeException e) {
             e.getStackTrace();
-        }finally {
+        } finally {
             snmpClient.stop();
         }
 

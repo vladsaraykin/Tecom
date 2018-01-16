@@ -7,7 +7,6 @@ import org.snmp4j.smi.*;
 import org.snmp4j.transport.DefaultUdpTransportMapping;
 
 import java.io.IOException;
-import java.util.ArrayList;
 
 public class SnmpClient {
 
@@ -19,9 +18,8 @@ public class SnmpClient {
     private Snmp snmp = null;
     private String address = null;
     private TransportMapping transport = null;
-    private static String oidValue = ".1.3.6.1.2.1.1.1.0";
+    private static String oidValue = "1.3.6.1.2.1.1.1";
     private static int snmpVersion = SnmpConstants.version1;
-    private static PDU pdu = null;
 
     public SnmpClient(String address) {
         this.address = address;
@@ -31,7 +29,6 @@ public class SnmpClient {
         transport = new DefaultUdpTransportMapping();
         transport.listen();
         snmp = new Snmp(transport);
-        pdu = new PDU();
     }
 
     public void getRequest() throws IOException {
@@ -41,18 +38,35 @@ public class SnmpClient {
     }
 
 
-    public void getNextRequest(ArrayList<String> oidValues) throws IOException {
-        for (String value : oidValues) {
-            pdu.add(new VariableBinding(new OID(value)));
-        }
+    public ResponseEvent getNextRequest(String oidValue) throws IOException {
+        PDU pdu = new PDU();
+
+        pdu.add(new VariableBinding(new OID(oidValue)));
+
         pdu.setType(PDU.GETNEXT);
         ResponseEvent response = snmp.getNext(pdu, getTarget(READ_COMMUNITY));
         if (response != null) {
             System.out.println("\nResponse:\nGot GetNext Response from Agent...");
             PDU responsePDU = response.getResponse();
             checkError(responsePDU);
+            return response;
         } else {
             System.out.println("Error: Agent Timeout... ");
+        }
+        return null;
+    }
+
+    public void getRangeValues(String oidValue1, String oidValue2) throws IOException {
+        ResponseEvent response;
+        OID oid = new OID(oidValue1);
+        OID oid2 = new OID(oidValue2);
+
+        while (true) {
+            response = getNextRequest(oid.toDottedString());
+            if (!oid2.equals(oid)) {
+                oid = response.getResponse().get(0).getOid();
+            }else
+          break;
         }
     }
 
@@ -60,6 +74,7 @@ public class SnmpClient {
         OID oid = new OID(oidValue);
         Variable var = new OctetString(newVariable);
         VariableBinding variableBinding = new VariableBinding(oid, var);
+        PDU pdu = new PDU();
         pdu.add(variableBinding);
         pdu.setType(PDU.SET);
         ResponseEvent response = snmp.set(pdu, getTarget(WRITE_COMMUNITY));
@@ -71,6 +86,7 @@ public class SnmpClient {
     }
 
     public ResponseEvent getResponseEvent() throws IOException {
+        PDU pdu = new PDU();
         pdu.add(new VariableBinding(new OID(oidValue)));
         pdu.setType(PDU.GET);
         System.out.println("Sending Request to Agent");
