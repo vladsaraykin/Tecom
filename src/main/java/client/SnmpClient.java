@@ -27,7 +27,6 @@ public class SnmpClient implements CommandResponder {
     private Snmp snmp = null;
     private String address = null;
     private TransportMapping transport = null;
-    private static String oidValue = "1.3.6.1.2.1.1.1";
     private static int snmpVersion = SnmpConstants.version2c;
     private MessageDispatcher mtDispatcher;
 
@@ -36,15 +35,15 @@ public class SnmpClient implements CommandResponder {
     }
 
     public void start() throws IOException {
-        transport = new DefaultUdpTransportMapping();
-        transport.listen();
-        mtDispatcher = createMessageDispatcher();
-        snmp = new Snmp(mtDispatcher, transport);
+
+        transport = new DefaultUdpTransportMapping(new UdpAddress(address));
+        snmp = new Snmp(createMessageDispatcher(), transport);
         snmp.addCommandResponder(this);
+        transport.listen();
     }
 
-    public void getRequest() throws IOException {
-        PDU responsePDU = getResponseEvent().getResponse();
+    public void getRequest(OID oidValue) throws IOException {
+        PDU responsePDU = getResponseEvent(oidValue).getResponse();
         System.out.println("\nResponse:\nGot Get Response from Agent...");
         checkError(responsePDU);
     }
@@ -68,18 +67,23 @@ public class SnmpClient implements CommandResponder {
         return null;
     }
 
-    public void getRangeValues(String oidValue1, String oidValue2) throws IOException {
-        ResponseEvent response;
-        OID oid = new OID(oidValue1);
-        OID oid2 = new OID(oidValue2);
+    public void getRangeValues(OID oidValue1, OID oidValue2) throws IOException {
 
-        while (true) {
-            response = getNextRequest(oid.toDottedString());
-            if (!oid2.equals(oid)) {
-                oid = response.getResponse().get(0).getOid();
-            } else
-                break;
-        }
+        ResponseEvent response = getResponseEvent(oidValue1);
+
+        if(!response.getResponse().getVariable(oidValue1).toString().contains("noSuchObject")) {
+            System.out.println(response.getResponse().get(0));
+            while (true) {
+                response = getNextRequest(oidValue1.toDottedString());
+                OID next = response.getResponse().get(0).getOid();
+                if (!oidValue2.equals(next)) {
+                    oidValue1 = next;
+                } else
+                    break;
+            }
+        }else
+         System.out.println("This number oid: " + oidValue1 + " isn't in the table");
+
     }
 
     public void setRequest(String oidValue, String newVariable) throws IOException {
@@ -97,9 +101,9 @@ public class SnmpClient implements CommandResponder {
         } else System.out.println("Error: Agent Timeout... ");
     }
 
-    public ResponseEvent getResponseEvent() throws IOException {
+    public ResponseEvent getResponseEvent(OID oidValue) throws IOException {
         PDU pdu = new PDU();
-        pdu.add(new VariableBinding(new OID(oidValue)));
+        pdu.add(new VariableBinding(oidValue));
         pdu.setType(PDU.GET);
         System.out.println("Sending Request to Agent");
         ResponseEvent response = snmp.get(pdu, getTarget(READ_COMMUNITY));
@@ -154,6 +158,7 @@ public class SnmpClient implements CommandResponder {
     }
 
     public synchronized void listen() {
+
         SecurityProtocols.getInstance().addDefaultProtocols();
         SecurityProtocols.getInstance().addPrivacyProtocol(new Priv3DES());
         System.out.println("Listening on " + address);
