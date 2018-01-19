@@ -35,7 +35,7 @@ public class SnmpClient implements CommandResponder {
     }
 
     public void start() throws IOException {
-
+    
         transport = new DefaultUdpTransportMapping(new UdpAddress(address));
         snmp = new Snmp(createMessageDispatcher(), transport);
         snmp.addCommandResponder(this);
@@ -78,12 +78,14 @@ public class SnmpClient implements CommandResponder {
                 OID next = response.getResponse().get(0).getOid();
                 if (!oidValue2.equals(next)) {
                     oidValue1 = next;
-                } else
+                } else {
                     break;
+                }
             }
-        }else
+        }else {
          System.out.println("This number oid: " + oidValue1 + " isn't in the table");
-
+         }
+        System.out.println("get range complite");
     }
 
     public void setRequest(String oidValue, String newVariable) throws IOException {
@@ -145,10 +147,12 @@ public class SnmpClient implements CommandResponder {
 
     public void stop() throws IOException {
         try {
+        	/*
             if (transport != null) {
                 transport.close();
                 transport = null;
             }
+            */
         } finally {
             if (snmp != null) {
                 snmp.close();
@@ -174,6 +178,7 @@ public class SnmpClient implements CommandResponder {
         mtDispatcher = new MultiThreadedMessageDispatcher(threadPool, new MessageDispatcherImpl());
         mtDispatcher.addMessageProcessingModel(new MPv1());
         mtDispatcher.addMessageProcessingModel(new MPv2c());
+        
         return mtDispatcher;
     }
 
@@ -185,28 +190,28 @@ public class SnmpClient implements CommandResponder {
             System.out.println("Trap type = " + pdu.getType());
             System.out.println("Variable bindings = " + pdu.getVariableBindings());
             int pduType = pdu.getType();
-            if ((pduType != PDU.TRAP) && (pduType != PDU.V1TRAP) && (pduType != PDU.REPORT)
-                    && (pduType != PDU.RESPONSE)) {
-                pdu.setErrorIndex(0);
-                pdu.setErrorStatus(0);
-                pdu.setType(PDU.RESPONSE);
-                StatusInformation statusInformation = new StatusInformation();
-                StateReference ref = commandResponderEvent.getStateReference();
-                try {
-                    System.out.println(commandResponderEvent.getPDU());
-                    commandResponderEvent.getMessageDispatcher().returnResponsePdu(
-                            commandResponderEvent.getMessageProcessingModel(),
-                            commandResponderEvent.getSecurityModel(),
-                            commandResponderEvent.getSecurityName(),
-                            commandResponderEvent.getSecurityLevel(),
-                            pdu, commandResponderEvent.getMaxSizeResponsePDU(),
-                            ref, statusInformation);
-
-                } catch (MessageException e) {
-                    System.err.println(e.getMessage());
-                    LogFactory.getLogger(SnmpRequest.class).error(e);
-                }
-            }
+//            if ((pduType != PDU.TRAP) && (pduType != PDU.V1TRAP) && (pduType != PDU.REPORT)
+//                    && (pduType != PDU.RESPONSE)) {
+//                pdu.setErrorIndex(0);
+//                pdu.setErrorStatus(0);
+//                pdu.setType(PDU.RESPONSE);
+//                StatusInformation statusInformation = new StatusInformation();
+//                StateReference ref = commandResponderEvent.getStateReference();
+//                try {
+//                    System.out.println(commandResponderEvent.getPDU());
+//                    commandResponderEvent.getMessageDispatcher().returnResponsePdu(
+//                            commandResponderEvent.getMessageProcessingModel(),
+//                            commandResponderEvent.getSecurityModel(),
+//                            commandResponderEvent.getSecurityName(),
+//                            commandResponderEvent.getSecurityLevel(),
+//                            pdu, commandResponderEvent.getMaxSizeResponsePDU(),
+//                            ref, statusInformation);
+//
+//                } catch (MessageException e) {
+//                    System.err.println(e.getMessage());
+//                    LogFactory.getLogger(SnmpRequest.class).error(e);
+//                }
+//            }
 
         }
     }
