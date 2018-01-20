@@ -66,12 +66,14 @@ public class SnmpClient {
                 OID next = response.getResponse().get(0).getOid();
                 if (!oidValue2.equals(next)) {
                     oidValue1 = next;
-                } else
+                } else {
                     break;
+                }
             }
-        } else
-            System.out.println("This number oid: " + oidValue1 + " isn't in the table");
-
+        }else {
+         System.out.println("This number oid: " + oidValue1 + " isn't in the table");
+         }
+        System.out.println("get range complite");
     }
 
     public void setRequest(String oidValue, String newVariable) throws IOException {
@@ -133,10 +135,12 @@ public class SnmpClient {
 
     public void stop() throws IOException {
         try {
+        	/*
             if (transport != null) {
                 transport.close();
                 transport = null;
             }
+            */
         } finally {
             if (snmp != null) {
                 snmp.close();
