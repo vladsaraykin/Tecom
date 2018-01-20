@@ -2,22 +2,13 @@ package client;
 
 import org.snmp4j.*;
 import org.snmp4j.event.ResponseEvent;
-import org.snmp4j.log.LogFactory;
 import org.snmp4j.mp.*;
-import org.snmp4j.security.Priv3DES;
-import org.snmp4j.security.SecurityProtocols;
 import org.snmp4j.smi.*;
-import org.snmp4j.tools.console.SnmpRequest;
-import org.snmp4j.transport.AbstractTransportMapping;
-import org.snmp4j.transport.DefaultTcpTransportMapping;
 import org.snmp4j.transport.DefaultUdpTransportMapping;
-import org.snmp4j.util.MultiThreadedMessageDispatcher;
-import org.snmp4j.util.ThreadPool;
 
 import java.io.IOException;
-import java.util.Date;
 
-public class SnmpClient implements CommandResponder {
+public class SnmpClient {
 
     private final static String WRITE_COMMUNITY = "private";
     private final static String READ_COMMUNITY = "public";
@@ -28,17 +19,14 @@ public class SnmpClient implements CommandResponder {
     private String address = null;
     private TransportMapping transport = null;
     private static int snmpVersion = SnmpConstants.version2c;
-    private MessageDispatcher mtDispatcher;
 
     public SnmpClient(String address) {
         this.address = address;
     }
 
     public void start() throws IOException {
-
-        transport = new DefaultUdpTransportMapping(new UdpAddress(address));
-        snmp = new Snmp(createMessageDispatcher(), transport);
-        snmp.addCommandResponder(this);
+        transport = new DefaultUdpTransportMapping((UdpAddress) GenericAddress.parse(address));
+        snmp = new Snmp(transport);
         transport.listen();
     }
 
@@ -71,7 +59,7 @@ public class SnmpClient implements CommandResponder {
 
         ResponseEvent response = getResponseEvent(oidValue1);
 
-        if(!response.getResponse().getVariable(oidValue1).toString().contains("noSuchObject")) {
+        if (!response.getResponse().getVariable(oidValue1).toString().contains("noSuchObject")) {
             System.out.println(response.getResponse().get(0));
             while (true) {
                 response = getNextRequest(oidValue1.toDottedString());
@@ -81,8 +69,8 @@ public class SnmpClient implements CommandResponder {
                 } else
                     break;
             }
-        }else
-         System.out.println("This number oid: " + oidValue1 + " isn't in the table");
+        } else
+            System.out.println("This number oid: " + oidValue1 + " isn't in the table");
 
     }
 
@@ -157,57 +145,4 @@ public class SnmpClient implements CommandResponder {
         }
     }
 
-    public synchronized void listen() {
-
-        SecurityProtocols.getInstance().addDefaultProtocols();
-        SecurityProtocols.getInstance().addPrivacyProtocol(new Priv3DES());
-        System.out.println("Listening on " + address);
-        try {
-            this.wait();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-    }
-
-    private MessageDispatcher createMessageDispatcher() {
-        ThreadPool threadPool = ThreadPool.create("DispatcherPooll", 10);
-        mtDispatcher = new MultiThreadedMessageDispatcher(threadPool, new MessageDispatcherImpl());
-        mtDispatcher.addMessageProcessingModel(new MPv1());
-        mtDispatcher.addMessageProcessingModel(new MPv2c());
-        return mtDispatcher;
-    }
-
-    @Override
-    public void processPdu(CommandResponderEvent commandResponderEvent) {
-        System.out.println("Received PDU...");
-        PDU pdu = commandResponderEvent.getPDU();
-        if (pdu != null) {
-            System.out.println("Trap type = " + pdu.getType());
-            System.out.println("Variable bindings = " + pdu.getVariableBindings());
-            int pduType = pdu.getType();
-            if ((pduType != PDU.TRAP) && (pduType != PDU.V1TRAP) && (pduType != PDU.REPORT)
-                    && (pduType != PDU.RESPONSE)) {
-                pdu.setErrorIndex(0);
-                pdu.setErrorStatus(0);
-                pdu.setType(PDU.RESPONSE);
-                StatusInformation statusInformation = new StatusInformation();
-                StateReference ref = commandResponderEvent.getStateReference();
-                try {
-                    System.out.println(commandResponderEvent.getPDU());
-                    commandResponderEvent.getMessageDispatcher().returnResponsePdu(
-                            commandResponderEvent.getMessageProcessingModel(),
-                            commandResponderEvent.getSecurityModel(),
-                            commandResponderEvent.getSecurityName(),
-                            commandResponderEvent.getSecurityLevel(),
-                            pdu, commandResponderEvent.getMaxSizeResponsePDU(),
-                            ref, statusInformation);
-
-                } catch (MessageException e) {
-                    System.err.println(e.getMessage());
-                    LogFactory.getLogger(SnmpRequest.class).error(e);
-                }
-            }
-
-        }
-    }
 }
