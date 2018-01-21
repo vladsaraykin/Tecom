@@ -25,7 +25,7 @@ public class SnmpClient {
     }
 
     public void start() throws IOException {
-        transport = new DefaultUdpTransportMapping((UdpAddress) GenericAddress.parse(address));
+        transport = new DefaultUdpTransportMapping();
         snmp = new Snmp(transport);
         transport.listen();
     }

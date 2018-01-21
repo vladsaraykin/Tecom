@@ -11,6 +11,8 @@ import org.snmp4j.util.MultiThreadedMessageDispatcher;
 import org.snmp4j.util.ThreadPool;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Dispatcher implements CommandResponder {
     private final String READ_COMMUNITY = "public";
@@ -20,6 +22,11 @@ public class Dispatcher implements CommandResponder {
     private MessageDispatcher mtDispatcher;
     private CommunityTarget target;
     private String address;
+    private List<SnmpClient> clientList;
+
+    public List<SnmpClient> getClientList() {
+        return clientList;
+    }
 
     public Dispatcher(String address) {
         this.address = address;
@@ -33,15 +40,20 @@ public class Dispatcher implements CommandResponder {
         mtDispatcher.addMessageProcessingModel(new MPv2c());
         SecurityProtocols.getInstance().addDefaultProtocols();
         target = new CommunityTarget();
-        target.setVersion(SnmpConstants.version2c );
+        target.setVersion(SnmpConstants.version2c);
         target.setCommunity(new OctetString(READ_COMMUNITY));
         snmp = new Snmp(mtDispatcher, transport);
         snmp.addCommandResponder(this);
+//      temporarily
+        clientList = new ArrayList<>();
     }
 
-    public void register() {
-
+    public void register(String ipClient) throws IOException {
+        SnmpClient snmpClient = new SnmpClient(ipClient);
+        clientList.add(snmpClient);
+        snmpClient.start();
     }
+
     public synchronized void listen() {
         try {
             System.out.println("Listening to address " + address);
@@ -55,7 +67,7 @@ public class Dispatcher implements CommandResponder {
         try {
             this.wait();
         } catch (InterruptedException e) {
-            System.err.println("Interrupted while waiting for traps: "  + e);
+            System.err.println("Interrupted while waiting for traps: " + e);
         }
 
     }
@@ -67,7 +79,7 @@ public class Dispatcher implements CommandResponder {
         if (pdu != null) {
             System.out.println("Trap ip is " + cmdResponderEvent.getPeerAddress());
             System.out.println("Type community traps is " + new String(cmdResponderEvent.getSecurityName()));
-        }else {
+        } else {
             System.out.println("PDU is null");
         }
     }
@@ -78,7 +90,7 @@ public class Dispatcher implements CommandResponder {
                 transport.close();
                 transport = null;
             }
-        }finally {
+        } finally {
             if (snmp != null) {
                 snmp.close();
                 snmp = null;
