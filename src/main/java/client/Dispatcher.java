@@ -12,7 +12,9 @@ import org.snmp4j.util.ThreadPool;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Dispatcher implements CommandResponder {
     private final String READ_COMMUNITY = "public";
@@ -22,11 +24,9 @@ public class Dispatcher implements CommandResponder {
     private MessageDispatcher mtDispatcher;
     private CommunityTarget target;
     private String address;
-    private List<SnmpClient> clientList;
+    private Map<String, String> clientList;
 
-    public List<SnmpClient> getClientList() {
-        return clientList;
-    }
+   
 
     public Dispatcher(String address) {
         this.address = address;
@@ -44,15 +44,12 @@ public class Dispatcher implements CommandResponder {
         target.setCommunity(new OctetString(READ_COMMUNITY));
         snmp = new Snmp(mtDispatcher, transport);
         snmp.addCommandResponder(this);
-//      temporarily
-        clientList = new ArrayList<>();
+        clientList = new HashMap<>();
     }
 
-    public void register(String ipClient) throws IOException {
-        SnmpClient snmpClient = new SnmpClient(ipClient);
-        clientList.add(snmpClient);
-        snmpClient.start();
-    }
+    public void register(String port,String ipClient) throws IOException {
+        clientList.put(port, ipClient);
+     }
 
     public synchronized void listen() {
         try {
@@ -76,12 +73,21 @@ public class Dispatcher implements CommandResponder {
     public synchronized void processPdu(CommandResponderEvent cmdResponderEvent) {
         System.out.println("Received PDU...");
         PDU pdu = cmdResponderEvent.getPDU();
+        Address address = cmdResponderEvent.getPeerAddress();
         if (pdu != null) {
-            System.out.println("Trap ip is " + cmdResponderEvent.getPeerAddress());
+            System.out.println("Trap ip is " + address);
             System.out.println("Type community traps is " + new String(cmdResponderEvent.getSecurityName()));
         } else {
             System.out.println("PDU is null");
         }
+        //TODO
+        for(int i = 0; i <= clientList.size(); i++) {
+        	if(address.equals(clientList.get(i))){
+        		
+        	}
+        }
+       
+        
     }
 
     public void close() throws IOException {

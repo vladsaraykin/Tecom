@@ -114,7 +114,7 @@ public class SnmpClient {
         target.setTimeout(SNMP_TIMEOUT);
         return target;
     }
-
+    
     private void checkError(PDU responsePDU) {
         if (responsePDU != null) {
             int errorStatus = responsePDU.getErrorStatus();
@@ -132,7 +132,10 @@ public class SnmpClient {
             System.out.println("Error: Response PDU is null");
         }
     }
-
+   
+    public void handle(PDU pdu) {
+    	System.out.println("Reserd message " + pdu);
+    }
     public void stop() throws IOException {
         try {
         	/*
