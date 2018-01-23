@@ -21,15 +21,17 @@ public class Main {
         OID sysDescr = new OID(SYS_DESCR);
         OID sysService = new OID(SYS_SERVICE);
 
-        Dispatcher dispatcher = new Dispatcher(args[0] + args[1]);
+        Dispatcher dispatcher = new Dispatcher(args[0] + "/" + args[1]);
         SnmpClient snmpPrinter = new SnmpClient(IP_ADDRESS_PRINTER);
         SnmpClient snmpRDC = new SnmpClient(IP_ADDRESS_RDC);
 
 
         try {
             dispatcher.init();
-            dispatcher.register(PORT_TRAP,IP_ADDRESS_PRINTER);
-            dispatcher.register(PORT_TRAP,IP_ADDRESS_RDC);            
+            dispatcher.register(snmpPrinter,PORT_TRAP);
+            dispatcher.register(snmpRDC,PORT_TRAP);
+            snmpPrinter.start();
+            snmpRDC.start();
             dispatcher.listen();
 //            snmpClient.getRangeValues(sysDescr, sysService);
 //            snmpClient.setRequest("1.3.6.1.2.1.1.5.0", "Printer HP Canon");
@@ -39,6 +41,7 @@ public class Main {
         } finally {
             snmpPrinter.stop();
             snmpRDC.stop();
+            dispatcher.close();
         }
 
     }

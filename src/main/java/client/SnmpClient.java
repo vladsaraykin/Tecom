@@ -20,6 +20,30 @@ public class SnmpClient {
     private TransportMapping transport = null;
     private static int snmpVersion = SnmpConstants.version2c;
 
+    public String getAddress() {
+        return address;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        SnmpClient that = (SnmpClient) o;
+
+        if (snmp != null ? !snmp.equals(that.snmp) : that.snmp != null) return false;
+        if (address != null ? !address.equals(that.address) : that.address != null) return false;
+        return transport != null ? transport.equals(that.transport) : that.transport == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = snmp != null ? snmp.hashCode() : 0;
+        result = 31 * result + (address != null ? address.hashCode() : 0);
+        result = 31 * result + (transport != null ? transport.hashCode() : 0);
+        return result;
+    }
+
     public SnmpClient(String address) {
         this.address = address;
     }
@@ -133,8 +157,8 @@ public class SnmpClient {
         }
     }
    
-    public void handle(PDU pdu) {
-    	System.out.println("Reserd message " + pdu);
+    public void handle(PDU pdu){
+    	System.out.println("Resend message " + pdu);
     }
     public void stop() throws IOException {
         try {

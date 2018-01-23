@@ -11,9 +11,8 @@ import org.snmp4j.util.MultiThreadedMessageDispatcher;
 import org.snmp4j.util.ThreadPool;
 
 import java.io.IOException;
-import java.util.ArrayList;
+
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class Dispatcher implements CommandResponder {
@@ -24,7 +23,7 @@ public class Dispatcher implements CommandResponder {
     private MessageDispatcher mtDispatcher;
     private CommunityTarget target;
     private String address;
-    private Map<String, String> clientList;
+    private Map<SnmpClient, String> clientList;
 
    
 
@@ -47,8 +46,8 @@ public class Dispatcher implements CommandResponder {
         clientList = new HashMap<>();
     }
 
-    public void register(String port,String ipClient) throws IOException {
-        clientList.put(port, ipClient);
+    public void register(SnmpClient snmpClient,String port){
+        clientList.put(snmpClient, port);
      }
 
     public synchronized void listen() {
@@ -80,13 +79,13 @@ public class Dispatcher implements CommandResponder {
         } else {
             System.out.println("PDU is null");
         }
-        //TODO
-        for(int i = 0; i <= clientList.size(); i++) {
-        	if(address.equals(clientList.get(i))){
-        		
-        	}
+
+        for (SnmpClient snmpClient : clientList.keySet()) {
+            if (address.toString().contains(snmpClient.getAddress())) {
+                snmpClient.handle(pdu);
+            }
         }
-       
+
         
     }
 
