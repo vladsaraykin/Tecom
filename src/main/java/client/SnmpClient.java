@@ -94,9 +94,9 @@ public class SnmpClient {
                     break;
                 }
             }
-        }else {
-         System.out.println("This number oid: " + oidValue1 + " isn't in the table");
-         }
+        } else {
+            System.out.println("This number oid: " + oidValue1 + " isn't in the table");
+        }
         System.out.println("get range complite");
     }
 
@@ -112,7 +112,9 @@ public class SnmpClient {
             System.out.println("\nResponse:\nGot Snmp Set Response from Agent");
             PDU responsePDU = response.getResponse();
             checkError(responsePDU);
-        } else System.out.println("Error: Agent Timeout... ");
+        } else {
+            System.out.println("Error: Agent Timeout... ");
+        }
     }
 
     public ResponseEvent getResponseEvent(OID oidValue) throws IOException {
@@ -131,14 +133,14 @@ public class SnmpClient {
     public Target getTarget(String community) {
         Address targetAddress = GenericAddress.parse(address);
         CommunityTarget target = new CommunityTarget();
-        target.setCommunity(new OctetString(community));
+        target.setCommunity(new OctetString(READ_COMMUNITY));
         target.setVersion(snmpVersion);
         target.setAddress(targetAddress);
         target.setRetries(SNMP_RETRIES);
         target.setTimeout(SNMP_TIMEOUT);
         return target;
     }
-    
+
     private void checkError(PDU responsePDU) {
         if (responsePDU != null) {
             int errorStatus = responsePDU.getErrorStatus();
@@ -156,13 +158,14 @@ public class SnmpClient {
             System.out.println("Error: Response PDU is null");
         }
     }
-   
-    public void handle(PDU pdu){
-    	System.out.println("Resend message " + pdu);
+
+    public void handle(PDU pdu) {
+        System.out.println("Resend message " + pdu);
     }
+
     public void stop() throws IOException {
         try {
-        	/*
+            /*
             if (transport != null) {
                 transport.close();
                 transport = null;
