@@ -17,9 +17,6 @@ public class TrapReceiver {
 		return clientsByListenPort;
 	}
 
-	public void setClientsByListenPort(Map<Integer, Set<SnmpClient>> clientsByListenPort) {
-		this.clientsByListenPort = clientsByListenPort;
-	}
 
 	public void start() throws IOException {
 		listener = new TrapReceiverListener();
@@ -30,6 +27,7 @@ public class TrapReceiver {
 
 	public void stop() throws IOException {
 		clientsByListenPort.clear();
+
 	}
 
 	public void registerClient(SnmpClient client) throws IOException {
@@ -46,8 +44,22 @@ public class TrapReceiver {
 	}
 
 	public void unregisterClient(SnmpClient client) throws IOException {
-		
-		
+		for (Set<SnmpClient> snmpClients : clientsByListenPort.values()) {
+			snmpClients.forEach(currentClient -> {
+				if (currentClient.getListenPort().equals(client.getListenPort())) {
+					if (snmpClients.size() == 1){
+						try {
+							listener.removeListener(client.getListenPort());
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}
+					clientsByListenPort.remove(client);
+				}
+			});
+		}
+
+
 	}
 
 }

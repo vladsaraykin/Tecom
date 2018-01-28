@@ -2,6 +2,7 @@ package main;
 
 import java.io.IOException;
 import java.util.Scanner;
+import java.util.Set;
 
 import client.SnmpClient;
 import trap.TrapReceiver;
@@ -47,6 +48,7 @@ public class Main {
 				statusTrapReceiver = false;
 				break;
 			case 3:
+				if(statusTrapReceiver == true) {
 					System.out.println("Enter ip clients");
 					String hostPort = scanner.next();
 					System.out.println("Enter request port");
@@ -55,23 +57,27 @@ public class Main {
 					Integer listenPort = scanner.nextInt();
 					System.out.println("Enter community this client");
 					String community = scanner.next();
-					SnmpClient snmpClient = new SnmpClient(hostPort, requestPort, listenPort,community);
+					SnmpClient snmpClient = new SnmpClient(hostPort, requestPort, listenPort, community);
 					trapReceiver.registerClient(snmpClient);
 					break;
-			case 4:
-				System.out.println("Select one of the available clients");
-				System.out.println("1 - Hp printer");
-				System.out.println("2 - RDC");
-				select = scanner.nextInt();
-				switch (select) {
-				case 1:
-//					trapReceiver.unregisterClient(snmpPrinter);
-					break;
-				case 2:
-//					trapReceiver.unregisterClient(snmpRDC);
+				}else{
+					System.out.println("Trap receiver isn't start!!!");
 					break;
 				}
-
+			case 4:
+				System.out.println("Enter the IP of the client who want to stop");
+				String ipClient = scanner.next();
+				for (Set<SnmpClient> clients : trapReceiver.getClientsByListenPort().values()) {
+					clients.forEach(client -> {
+						if (client.getAddress().equals(ipClient)) {
+							try {
+								trapReceiver.unregisterClient(client);
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
+						}
+					});
+				}
 				break;
 			case 5:
 				flag = false;
