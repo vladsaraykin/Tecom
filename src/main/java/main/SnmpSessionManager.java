@@ -66,5 +66,22 @@ public class SnmpSessionManager {
 
         return session;
     }
+    public void startSnmpSession(SnmpSessionType type) {
+    	try {
+        	getSession(type).listen();
+
+    	}
+    	catch(Exception e) {
+    		e.printStackTrace();
+    	}
+    }
+    public void stopSnmpSession(SnmpSessionType type) {
+    	try {
+    		getSession(type).close();
+    	}
+    	catch (Exception e) {
+			e.printStackTrace();
+		}
+    }
 
 }

@@ -7,18 +7,20 @@ import java.util.Map;
 import java.util.Set;
 
 import client.SnmpClient;
+import main.SnmpSessionManager;
+import main.SnmpSessionManager.SnmpSessionType;
 
 public class TrapReceiver {
 	private Integer defaultListenPort = 162;
 	private TrapReceiverListener listener;
-	private Map<Integer, Set<SnmpClient>> clientsByListenPort;
+	private Map<Integer, Set<SnmpClient>> clientsByListenPort = new HashMap<>();
 
 	public Map<Integer, Set<SnmpClient>> getClientsByListenPort() {
 		return clientsByListenPort;
 	}
 
-
 	public void start() throws IOException {
+		
 		listener = new TrapReceiverListener();
 		listener.init(this);
 		listener.addListener(defaultListenPort);
@@ -26,14 +28,13 @@ public class TrapReceiver {
 	}
 
 	public void stop() throws IOException {
+		//TODO проверка
+		SnmpSessionManager.getInstance().stopSnmpSession(SnmpSessionType.TRAP_RECEIVER);
 		clientsByListenPort.clear();
 
 	}
 
 	public void registerClient(SnmpClient client) throws IOException {
-		if (clientsByListenPort == null) {
-			clientsByListenPort = new HashMap<>();
-		}
 		listener.addListener(client.getListenPort());
 		Set<SnmpClient> clients = clientsByListenPort.get(client.getListenPort());
 		if (clients == null) {
@@ -44,21 +45,17 @@ public class TrapReceiver {
 	}
 
 	public void unregisterClient(SnmpClient client) throws IOException {
-		for (Set<SnmpClient> snmpClients : clientsByListenPort.values()) {
-			snmpClients.forEach(currentClient -> {
-				if (currentClient.getListenPort().equals(client.getListenPort())) {
-					if (snmpClients.size() == 1){
-						try {
-							listener.removeListener(client.getListenPort());
-						} catch (IOException e) {
-							e.printStackTrace();
-						}
-					}
-					clientsByListenPort.remove(client);
-				}
-			});
-		}
 
+		Set<SnmpClient> clients = clientsByListenPort.get(client.getListenPort());
+		clients.remove(client);
+		if (clients.isEmpty()) {
+			try {
+				listener.removeListener(client.getListenPort());
+				clientsByListenPort.remove(client.getListenPort());
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 
 	}
 

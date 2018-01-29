@@ -1,6 +1,7 @@
 package main;
 
 import java.io.IOException;
+import java.util.Map.Entry;
 import java.util.Scanner;
 import java.util.Set;
 
@@ -29,7 +30,8 @@ public class Main {
 			System.out.println("2 - Stop Trap Receiver");
 			System.out.println("3 - Add client");
 			System.out.println("4 - Remove client");
-			System.out.println("5 - exit");
+			System.out.println("5 - Client list");
+			System.out.println("6 - Exit");
 
 			Scanner scanner = new Scanner(System.in);
 			int select = scanner.nextInt();
@@ -57,7 +59,7 @@ public class Main {
 					Integer listenPort = scanner.nextInt();
 					System.out.println("Enter community this client");
 					String community = scanner.next();
-					SnmpClient snmpClient = new SnmpClient(hostPort, requestPort, listenPort, community);
+					SnmpClient snmpClient = new SnmpClient(hostPort, listenPort, requestPort, community);
 					trapReceiver.registerClient(snmpClient);
 					break;
 				}else{
@@ -65,11 +67,11 @@ public class Main {
 					break;
 				}
 			case 4:
-				System.out.println("Enter the IP of the client who want to stop");
-				String ipClient = scanner.next();
+				System.out.println("Enter client id");
+				int clientId = scanner.nextInt();
 				for (Set<SnmpClient> clients : trapReceiver.getClientsByListenPort().values()) {
 					clients.forEach(client -> {
-						if (client.getAddress().equals(ipClient)) {
+						if (client.getClientId() == clientId) {
 							try {
 								trapReceiver.unregisterClient(client);
 							} catch (IOException e) {
@@ -79,7 +81,19 @@ public class Main {
 					});
 				}
 				break;
-			case 5:
+			case 5: 
+				System.out.println("Client list: ");
+				for(Entry<Integer, Set<SnmpClient>> clientsByListenPort : trapReceiver.getClientsByListenPort().entrySet()) {
+					System.out.println("  Listen port " + clientsByListenPort.getKey() + ":");
+					for(SnmpClient client : clientsByListenPort.getValue()) {
+						System.out.println("    Client #" + client.getClientId());
+						System.out.println("    IP address: " + client.getAddress());
+						System.out.println("    Community: " + client.getCommunity());
+					}
+				}
+				
+				break;
+			case 6:
 				flag = false;
 				trapReceiver.stop();
 				System.out.println("Exit");

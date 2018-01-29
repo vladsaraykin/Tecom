@@ -13,11 +13,14 @@ import java.io.IOException;
 
 public class SnmpClient {
 
+	private static int clientIdCount = 1;
+	
 	private final static String WRITE_COMMUNITY = "private";
 	private final static String READ_COMMUNITY = "public";
 	private final static int SNMP_RETRIES = 3;
 	private final static long SNMP_TIMEOUT = 1000L;
-
+	
+	private int clientId;
 	private String address = null;
 	private TransportMapping transport = null;
 	private String community = null;
@@ -31,6 +34,10 @@ public class SnmpClient {
 
 	public String getCommunity() {
 		return community;
+	}
+	
+	public int getClientId() {
+		return clientId;
 	}
 
 	public Integer getListenPort() {
@@ -47,6 +54,8 @@ public class SnmpClient {
 		this.community = community;
 		this.listenPort = listenPort;
 		this.requestPort = requestPort;
+		clientId = clientIdCount;
+		clientIdCount++;
 	}
 
 	public void getRequest(OID oidValue) throws IOException {
@@ -129,7 +138,7 @@ public class SnmpClient {
 	public Target getTarget(String community) {
 		Address targetAddress = GenericAddress.parse(address + "/" + requestPort);
 		CommunityTarget target = new CommunityTarget();
-		target.setCommunity(new OctetString(READ_COMMUNITY));
+		target.setCommunity(new OctetString(community));
 		target.setVersion(snmpVersion);
 		target.setAddress(targetAddress);
 		target.setRetries(SNMP_RETRIES);
@@ -156,7 +165,7 @@ public class SnmpClient {
 	}
 
 	public void handle(PDU pdu) {
-		System.out.println("Resend message " + pdu);
+		System.out.println("Client #" + clientId + " received message: " + pdu);
 	}
 
 }
