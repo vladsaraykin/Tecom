@@ -59,7 +59,7 @@ public class SnmpSessionManager {
             mtDispatcher.addMessageProcessingModel(new MPv2c());
             SecurityProtocols.getInstance().addDefaultProtocols();
             session = new Snmp(mtDispatcher);
-            session.listen();
+
         } catch (Exception e) {
             System.out.println("filed init snmp session");
         }
