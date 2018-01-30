@@ -12,6 +12,7 @@ public class TrapReceiver {
     private Integer defaultListenPort = 162;
     private TrapReceiverListener listener;
     private Map<Integer, Set<SnmpClient>> clientsByListenPort = new HashMap<>();
+    private boolean status = false;
 
     public Map<Integer, Set<SnmpClient>> getClientsByListenPort() {
         return clientsByListenPort;
@@ -22,7 +23,7 @@ public class TrapReceiver {
         listener = new TrapReceiverListener();
         listener.init(this);
         listener.addListener(defaultListenPort);
-
+        status = true;
     }
 
     public void stop() throws IOException {
@@ -34,9 +35,7 @@ public class TrapReceiver {
                 clientsByListenPort.clear();
                 System.out.println("Trap receiver is stopped");
             }
-
-
-
+            status = false;
 
     }
 
@@ -64,5 +63,8 @@ public class TrapReceiver {
         }
 
     }
+    public boolean isStarted() {
+		return status;
+	}
 
 }

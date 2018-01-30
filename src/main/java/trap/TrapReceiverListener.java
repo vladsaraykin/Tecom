@@ -3,6 +3,8 @@ package trap;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Collection;
+
+import org.snmp4j.Snmp;
 import org.snmp4j.TransportMapping;
 import org.snmp4j.smi.Address;
 import org.snmp4j.smi.TcpAddress;
@@ -14,11 +16,11 @@ import main.SnmpSessionManager.SnmpSessionType;
 public class TrapReceiverListener {
 
 	private String listenHostAddress = "0.0.0.0";
-
-	public void init(TrapReceiver trapReceiver) throws IOException {
+	private Snmp snmpSession = SnmpSessionManager.getInstance().getSession(SnmpSessionType.TRAP_RECEIVER);
+		public void init(TrapReceiver trapReceiver) throws IOException {
 		SnmpEventDispatcher snmpEventDispatcher = new SnmpEventDispatcher(trapReceiver);
 		SnmpSessionManager.getInstance().startSnmpSession(SnmpSessionType.TRAP_RECEIVER);
-		SnmpSessionManager.getInstance().getSession(SnmpSessionType.TRAP_RECEIVER).addCommandResponder(snmpEventDispatcher);
+		snmpSession.addCommandResponder(snmpEventDispatcher);
 
 
 	}
@@ -26,13 +28,13 @@ public class TrapReceiverListener {
 	@SuppressWarnings("rawtypes")
 	public void addListener(Integer listenPort) throws IOException {
 		UdpAddress addressListener = new UdpAddress(InetAddress.getByName(listenHostAddress), listenPort);
-		if (SnmpSessionManager.getInstance().getSession(SnmpSessionType.TRAP_RECEIVER).getMessageDispatcher().getTransportMappings().size() == 0) {
+		if (snmpSession.getMessageDispatcher().getTransportMappings().size() == 0) {
 			DefaultUdpTransportMapping transport = new DefaultUdpTransportMapping(addressListener);
-			SnmpSessionManager.getInstance().getSession(SnmpSessionType.TRAP_RECEIVER).getMessageDispatcher().addTransportMapping(transport);
-			transport.addTransportListener(SnmpSessionManager.getInstance().getSession(SnmpSessionType.TRAP_RECEIVER).getMessageDispatcher());
+			snmpSession.getMessageDispatcher().addTransportMapping(transport);
+			transport.addTransportListener(snmpSession.getMessageDispatcher());
 			transport.listen();
 		} else {
-			for (TransportMapping transportMapping : SnmpSessionManager.getInstance().getSession(SnmpSessionType.TRAP_RECEIVER).getMessageDispatcher().getTransportMappings()) {
+			for (TransportMapping transportMapping : snmpSession.getMessageDispatcher().getTransportMappings()) {
 
 				Address peerAddress = transportMapping.getListenAddress();
 				int peerPort = 0;
@@ -43,8 +45,8 @@ public class TrapReceiverListener {
 				}
 				if (peerPort != listenPort) {
 					DefaultUdpTransportMapping transport = new DefaultUdpTransportMapping(addressListener);
-					SnmpSessionManager.getInstance().getSession(SnmpSessionType.TRAP_RECEIVER).getMessageDispatcher().addTransportMapping(transport);
-					transport.addTransportListener(SnmpSessionManager.getInstance().getSession(SnmpSessionType.TRAP_RECEIVER).getMessageDispatcher());
+					snmpSession.getMessageDispatcher().addTransportMapping(transport);
+					transport.addTransportListener(snmpSession.getMessageDispatcher());
 					transport.listen();
 				}
 			}
@@ -53,7 +55,7 @@ public class TrapReceiverListener {
 
 	@SuppressWarnings("rawtypes")
 	public void removeListener(Integer listenPort) throws IOException {
-		Collection<TransportMapping> transportMappings = SnmpSessionManager.getInstance().getSession(SnmpSessionType.TRAP_RECEIVER).getMessageDispatcher().getTransportMappings();
+		Collection<TransportMapping> transportMappings = snmpSession.getMessageDispatcher().getTransportMappings();
 		for (TransportMapping transport : transportMappings) {
 			Address peerAddress = transport.getListenAddress();
 			int peerPort = 0;
@@ -72,5 +74,8 @@ public class TrapReceiverListener {
 			}
 		}
 	}
+
+	
+	
 
 }

@@ -15,73 +15,77 @@ import org.snmp4j.util.MultiThreadedMessageDispatcher;
 import org.snmp4j.util.ThreadPool;
 
 public class SnmpSessionManager {
-    private static SnmpSessionManager INSTANCE;
-    private Map<SnmpSessionType, Snmp> sessions = new HashMap<>();
+	private static SnmpSessionManager INSTANCE;
+	private Map<SnmpSessionType, Snmp> sessions = new HashMap<>();
 
-    public static SnmpSessionManager getInstance() {
-        if (INSTANCE == null) {
-            INSTANCE = new SnmpSessionManager();
-        }
-        return INSTANCE;
-    }
+	public static SnmpSessionManager getInstance() {
+		if (INSTANCE == null) {
+			INSTANCE = new SnmpSessionManager();
+		}
+		return INSTANCE;
+	}
 
-    public enum SnmpSessionType {
-        TRAP_RECEIVER, CLIENT
-    }
+	public enum SnmpSessionType {
+		TRAP_RECEIVER, CLIENT
+	}
 
-    public Snmp getSession(SnmpSessionType type) {
-        Snmp session = sessions.get(type);
-        if (session == null) {
-            switch (type) {
-                case TRAP_RECEIVER:
-                    session = createSnmpSession();
-                    break;
-                case CLIENT:
-                    session = createSnmpSession();
-                    break;
-                default:
-                    System.out.println("Request snmp session for uknown type " + type);
-                    break;
-            }
-            sessions.put(type, session);
-        }
-        return session;
+	public Snmp getSession(SnmpSessionType type) {
+		Snmp session = sessions.get(type);
+		if (session == null) {
+			switch (type) {
+			case TRAP_RECEIVER:
+				session = createSnmpSession();
+				break;
+			case CLIENT:
+				session = createSnmpSession();
+				break;
+			default:
+				System.out.println("Request snmp session for uknown type " + type);
+				break;
+			}
+			sessions.put(type, session);
+		}
+		return session;
 
-    }
+	}
 
-    private Snmp createSnmpSession() {
-        Snmp session = null;
-        try {
-            ThreadPool threadPool = ThreadPool.create("Dispatcher pool", 10);
-            MessageDispatcher mtDispatcher = new MultiThreadedMessageDispatcher(threadPool,
-                    new MessageDispatcherImpl());
-            mtDispatcher.addMessageProcessingModel(new MPv1());
-            mtDispatcher.addMessageProcessingModel(new MPv2c());
-            SecurityProtocols.getInstance().addDefaultProtocols();
-            session = new Snmp(mtDispatcher);
+	private Snmp createSnmpSession() {
+		Snmp session = null;
+		try {
+			ThreadPool threadPool = ThreadPool.create("Dispatcher pool", 10);
+			MessageDispatcher mtDispatcher = new MultiThreadedMessageDispatcher(threadPool,
+					new MessageDispatcherImpl());
+			mtDispatcher.addMessageProcessingModel(new MPv1());
+			mtDispatcher.addMessageProcessingModel(new MPv2c());
+			SecurityProtocols.getInstance().addDefaultProtocols();
+			session = new Snmp(mtDispatcher);
 
-        } catch (Exception e) {
-            System.out.println("filed init snmp session");
-        }
+		} catch (Exception e) {
+			System.out.println("filed init snmp session");
+		}
 
-        return session;
-    }
-    public void startSnmpSession(SnmpSessionType type) {
-    	try {
-        	getSession(type).listen();
+		return session;
+	}
 
-    	}
-    	catch(Exception e) {
-    		e.printStackTrace();
-    	}
-    }
-    public void stopSnmpSession(SnmpSessionType type) {
-    	try {
-    		getSession(type).close();
-    	}
-    	catch (Exception e) {
+	public void startSnmpSession(SnmpSessionType type) {
+		try {
+			getSession(type).listen();
+
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
-    }
+	}
+
+	public void stopSnmpSession(SnmpSessionType type) {
+		try {
+			Snmp session = sessions.get(type);
+			if (session != null) {
+				session.close();
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 
 }
