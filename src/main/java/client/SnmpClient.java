@@ -110,21 +110,28 @@ public class SnmpClient {
 		ResponseEvent response = snmpSession.get(pdu,getTarget(readCommunity));
 		if(checkResponse(response)){
 			if (!response.getResponse().getVariable(firstOid).toString().contains(NO_SUCH_OBJECT)) {
-				System.out.println(response.getResponse().get(0));
-				while (true) {
-					PDU nextPdu = getNextRequest(firstOid.toDottedString());
-					listPDU.add(nextPdu);
-					OID nextOID = nextPdu.get(0).getOid();
-					if (!lastOid.equals(nextOID)) {
-						firstOid = nextOID;
-					} else {
-						break;
+				if(getRequest(lastOid) != null){
+					System.out.println(response.getResponse().get(0));
+					while (true) {
+						PDU nextPdu = getNextRequest(firstOid.toDottedString());
+						if(checkResponse(snmpSession.get(nextPdu,getTarget(readCommunity)))){
+
+							listPDU.add(nextPdu);
+							OID nextOID = nextPdu.get(0).getOid();
+							if (!lastOid.equals(nextOID)) {
+								firstOid = nextOID;
+							} else {
+								break;
+							}
+						}
 					}
+				}else{
+					System.out.println("The last OID is not found");
 				}
+
 			} else {
 				System.out.println("This number oid: " + firstOid + " isn't in the table");
 			}
-			System.out.println("get range complite");
 		}else {
 			System.out.println(response + " is null");
 		}
