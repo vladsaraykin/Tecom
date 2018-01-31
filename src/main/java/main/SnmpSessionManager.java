@@ -1,5 +1,6 @@
 package main;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,10 +35,23 @@ public class SnmpSessionManager {
 		if (session == null) {
 			switch (type) {
 			case TRAP_RECEIVER:
-				session = createSnmpSession();
+				session = createSnmpSession("trap receiver pool");
 				break;
 			case CLIENT:
-				session = createSnmpSession();
+				session = createSnmpSession("client pool");
+				if (session != null) {
+
+					try {
+						TransportMapping transport = new DefaultUdpTransportMapping();
+						session.addTransportMapping(transport);
+						transport.addTransportListener(session.getMessageDispatcher());
+						session.listen();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+
+				}
 				break;
 			default:
 				System.out.println("Request snmp session for uknown type " + type);
@@ -49,15 +63,16 @@ public class SnmpSessionManager {
 
 	}
 
-	private Snmp createSnmpSession() {
+	private Snmp createSnmpSession(String name) {
 		Snmp session = null;
 		try {
-			ThreadPool threadPool = ThreadPool.create("Dispatcher pool", 10);
+			ThreadPool threadPool = ThreadPool.create(name, 10);
 			MessageDispatcher mtDispatcher = new MultiThreadedMessageDispatcher(threadPool,
 					new MessageDispatcherImpl());
 			mtDispatcher.addMessageProcessingModel(new MPv1());
 			mtDispatcher.addMessageProcessingModel(new MPv2c());
 			SecurityProtocols.getInstance().addDefaultProtocols();
+
 			session = new Snmp(mtDispatcher);
 
 		} catch (Exception e) {
@@ -81,6 +96,7 @@ public class SnmpSessionManager {
 			Snmp session = sessions.get(type);
 			if (session != null) {
 				session.close();
+				session = null;
 			}
 
 		} catch (Exception e) {

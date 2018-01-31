@@ -9,61 +9,61 @@ import main.SnmpSessionManager.SnmpSessionType;
 import org.snmp4j.TransportMapping;
 
 public class TrapReceiver {
-    private Integer defaultListenPort = 162;
-    private TrapReceiverListener listener;
-    private Map<Integer, Set<SnmpClient>> clientsByListenPort = new HashMap<>();
-    private boolean status = false;
+	private static final Integer defaultListenPort = 162;
+	private TrapReceiverListener listener;
+	private Map<Integer, Set<SnmpClient>> clientsByListenPort = new HashMap<>();
+	private boolean status = false;
 
-    public Map<Integer, Set<SnmpClient>> getClientsByListenPort() {
-        return clientsByListenPort;
-    }
+	public Map<Integer, Set<SnmpClient>> getClientsByListenPort() {
+		return clientsByListenPort;
+	}
 
-    public void start() throws IOException {
+	public void start() throws IOException {
 
-        listener = new TrapReceiverListener();
-        listener.init(this);
-        listener.addListener(defaultListenPort);
-        status = true;
-    }
+		listener = new TrapReceiverListener();
+		listener.init(this);
+		listener.addListener(defaultListenPort);
+		status = true;
+	}
 
-    public void stop() throws IOException {
+	public void stop() throws IOException {
 
-            if(clientsByListenPort.isEmpty()){
-                System.out.println("Trap receiver is not run");
-            }else{
-                SnmpSessionManager.getInstance().stopSnmpSession(SnmpSessionType.TRAP_RECEIVER);
-                clientsByListenPort.clear();
-                System.out.println("Trap receiver is stopped");
-            }
-            status = false;
+		if (status) {
+			SnmpSessionManager.getInstance().stopSnmpSession(SnmpSessionType.TRAP_RECEIVER);
+			clientsByListenPort.clear();
+			System.out.println("Trap receiver is stopped");
+			status = false;
+		}
+		
 
-    }
+	}
 
-    public void registerClient(SnmpClient client) throws IOException {
-        listener.addListener(client.getListenPort());
-        Set<SnmpClient> clients = clientsByListenPort.get(client.getListenPort());
-        if (clients == null) {
-            clients = new HashSet<>();
-        }
-        clients.add(client);
-        clientsByListenPort.put(client.getListenPort(), clients);
-    }
+	public void registerClient(SnmpClient client) throws IOException {
+		listener.addListener(client.getListenPort());
+		Set<SnmpClient> clients = clientsByListenPort.get(client.getListenPort());
+		if (clients == null) {
+			clients = new HashSet<>();
+		}
+		clients.add(client);
+		clientsByListenPort.put(client.getListenPort(), clients);
+	}
 
-    public void unregisterClient(SnmpClient client) throws IOException {
+	public void unregisterClient(SnmpClient client) throws IOException {
 
-        Set<SnmpClient> clients = clientsByListenPort.get(client.getListenPort());
-        clients.remove(client);
-        if (clients.isEmpty()) {
-            try {
-                listener.removeListener(client.getListenPort());
-                clientsByListenPort.remove(client.getListenPort());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+		Set<SnmpClient> clients = clientsByListenPort.get(client.getListenPort());
+		clients.remove(client);
+		if (clients.isEmpty()) {
+			try {
+				listener.removeListener(client.getListenPort());
+				clientsByListenPort.remove(client.getListenPort());
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 
-    }
-    public boolean isStarted() {
+	}
+
+	public boolean isStarted() {
 		return status;
 	}
 

@@ -25,7 +25,6 @@ public class SnmpClient {
 
 	private static int clientIdCount = 1;
 
-
 	private final static int SNMP_RETRIES = 3;
 	private final static long SNMP_TIMEOUT = 1000L;
 	private final static String NO_SUCH_OBJECT = "noSuchObject";
@@ -38,7 +37,7 @@ public class SnmpClient {
 	private Integer listenPort = null;
 	private Integer requestPort = null;
 	private static int snmpVersion = SnmpConstants.version2c;
-	private Snmp snmpSession = SnmpSessionManager.getInstance().getSession(SnmpSessionType.CLIENT);
+	
 
 	public String getAddress() {
 
@@ -62,7 +61,8 @@ public class SnmpClient {
 		return requestPort;
 	}
 
-	public SnmpClient(String address, Integer listenPort, Integer requestPort, String community, String writeCommunity) {
+	public SnmpClient(String address, Integer listenPort, Integer requestPort, String community,
+			String writeCommunity) {
 		super();
 		this.address = address;
 		this.readCommunity = community;
@@ -73,82 +73,86 @@ public class SnmpClient {
 		clientIdCount++;
 	}
 
-	public PDU getRequest(OID oidValue) throws IOException {
-		PDU pdu = new PDU();
-		pdu.add(new VariableBinding(new OID(oidValue)));
-		pdu.setType(PDU.GET);
-		ResponseEvent response = snmpSession.get(pdu, getTarget(readCommunity));
-		if (checkResponse(response)) {
-			return pdu;
-		} else {
+	public PDU getRequest(OID oidValue) {
+		Snmp snmpSession = SnmpSessionManager.getInstance().getSession(SnmpSessionType.CLIENT);
+		try {
+			PDU pdu = new PDU();
+			pdu.add(new VariableBinding(new OID(oidValue)));
+			pdu.setType(PDU.GET);
+			ResponseEvent response = snmpSession.get(pdu, getTarget(readCommunity));
+			if (checkResponse(response)) {
+				return response.getResponse();
+			} else {
+				return null;
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
 			return null;
 		}
-
 	}
 
-	public PDU getNextRequest(String oidValue) throws IOException {
-		PDU pdu = new PDU();
-		pdu.add(new VariableBinding(new OID(oidValue)));
-		pdu.setType(PDU.GETNEXT);
-		ResponseEvent response = snmpSession.getNext(pdu, getTarget(readCommunity));
-		if (checkResponse(response)) {
-			return pdu;
-		} else {
+	public PDU getNextRequest(OID oidValue) {
+		Snmp snmpSession = SnmpSessionManager.getInstance().getSession(SnmpSessionType.CLIENT);
+		try {
+
+			PDU pdu = new PDU();
+			pdu.add(new VariableBinding(oidValue));
+			pdu.setType(PDU.GETNEXT);
+			ResponseEvent response = snmpSession.getNext(pdu, getTarget(readCommunity));
+			if (checkResponse(response)) {
+				return response.getResponse();
+			} else {
+				return null;
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
 			return null;
 		}
-
 	}
 
-	public List getRangeValues(OID firstOid, OID lastOid) throws IOException {
-		List<PDU> listPDU = new ArrayList<>();
-		
-		PDU pdu = new PDU();
-		pdu.add(new VariableBinding(new OID(firstOid)));
-		pdu.setType(PDU.GET);
-		
-		listPDU.add(pdu);
-		ResponseEvent response = snmpSession.get(pdu,getTarget(readCommunity));
-		if(checkResponse(response)){
-			if (!response.getResponse().getVariable(firstOid).toString().contains(NO_SUCH_OBJECT)) {
-				if(getRequest(lastOid) != null){
-					System.out.println(response.getResponse().get(0));
-					while (true) {
-						PDU nextPdu = getNextRequest(firstOid.toDottedString());
-						if(checkResponse(snmpSession.get(nextPdu,getTarget(readCommunity)))){
+	public List<PDU> getRangeValues(OID firstOid, OID lastOid) {
 
-							listPDU.add(nextPdu);
-							OID nextOID = nextPdu.get(0).getOid();
-							if (!lastOid.equals(nextOID)) {
-								firstOid = nextOID;
-							} else {
-								break;
-							}
-						}
-					}
-				}else{
-					System.out.println("The last OID is not found");
+		List<PDU> results = new ArrayList<>();
+		if(firstOid == null && lastOid == null) {
+			return results;
+		}
+		PDU firstResponse = getRequest(firstOid);
+		OID nextOid = firstOid;
+		PDU nextResponse = firstResponse;
+
+		if (firstResponse != null && !firstResponse.getVariable(firstOid).toString().contains(NO_SUCH_OBJECT)) {
+
+			do {
+				results.add(nextResponse);
+				if (lastOid.equals(nextOid)) {
+					break;
+				}
+				nextResponse = getNextRequest(nextOid);
+				nextOid = nextResponse.get(0).getOid();
+				if (nextResponse == null || nextResponse.getVariable(nextOid).toString().contains(NO_SUCH_OBJECT)) {
+					break;
 				}
 
-			} else {
-				System.out.println("This number oid: " + firstOid + " isn't in the table");
-			}
-		}else {
-			System.out.println(response + " is null");
+			} while (true);
 		}
-		
-		return listPDU;
+
+		return results;
+
 	}
 
-	public boolean setRequest(String oidValue, String newVariable) throws IOException {
-		OID oid = new OID(oidValue);
-		Variable var = new OctetString(newVariable);
-		VariableBinding variableBinding = new VariableBinding(oid, var);
-		PDU pdu = new PDU();
-		pdu.add(variableBinding);
-		pdu.setType(PDU.SET);
-		ResponseEvent response = SnmpSessionManager.getInstance().getSession(SnmpSessionType.CLIENT).set(pdu,
-				getTarget(writeCommunity));
-
+	public boolean setRequest(OID oidValue, String newVariable) {
+		ResponseEvent response = null;
+		try {
+			Variable var = new OctetString(newVariable);
+			VariableBinding variableBinding = new VariableBinding(oidValue, var);
+			PDU pdu = new PDU();
+			pdu.add(variableBinding);
+			pdu.setType(PDU.SET);
+			response = SnmpSessionManager.getInstance().getSession(SnmpSessionType.CLIENT).set(pdu,
+					getTarget(writeCommunity));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		return checkResponse(response);
 
 	}
