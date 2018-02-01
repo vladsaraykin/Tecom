@@ -2,6 +2,7 @@ package trap;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.Map.Entry;
 
 import client.SnmpClient;
 import main.SnmpSessionManager;
@@ -33,8 +34,9 @@ public class TrapReceiver {
 			clientsByListenPort.clear();
 			System.out.println("Trap receiver is stopped");
 			status = false;
+		}else {
+			System.out.println("Trap receiver is not run");
 		}
-		
 
 	}
 
@@ -61,6 +63,18 @@ public class TrapReceiver {
 			}
 		}
 
+	}
+
+	public void showClients() {
+		for (Entry<Integer, Set<SnmpClient>> clientsByListenPort : clientsByListenPort.entrySet()) {
+			System.out.println("  Listen port " + clientsByListenPort.getKey() + ":");
+			for (SnmpClient client : clientsByListenPort.getValue()) {
+				System.out.println("   Client #" + client.getClientId());
+				System.out.println("    IP address: " + client.getAddress());
+				System.out.println("      Request port: " + client.getRequestPort());
+				System.out.println("    Community: " + client.getCommunity());
+			}
+	}
 	}
 
 	public boolean isStarted() {

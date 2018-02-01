@@ -183,7 +183,6 @@ public class SnmpClient {
 					System.out.println("Error Status = " + errorStatus);
 					System.out.println("Error Index = " + errorIndex);
 					System.out.println("Error Status Text = " + errorStatusText);
-
 				}
 			}
 		} else {

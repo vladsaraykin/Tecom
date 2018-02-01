@@ -70,19 +70,25 @@ public class Main {
 				}
 			case 4:
 				if (trapReceiver.isStarted()) {
-					System.out.println("Enter client id");
-					int clientId = scanner.nextInt();
-					for (Set<SnmpClient> clients : trapReceiver.getClientsByListenPort().values()) {
-						clients.forEach(client -> {
-							if (client.getClientId() == clientId) {
-								try {
-									trapReceiver.unregisterClient(client);
-								} catch (IOException e) {
-									e.printStackTrace();
+					if(trapReceiver.getClientsByListenPort().size() != 0) {
+						trapReceiver.showClients();
+						System.out.println("Enter client id");
+						int clientId = scanner.nextInt();
+						for (Set<SnmpClient> clients : trapReceiver.getClientsByListenPort().values()) {
+							clients.forEach(client -> {
+								if (client.getClientId() == clientId) {
+									try {
+										trapReceiver.unregisterClient(client);
+									} catch (IOException e) {
+										e.printStackTrace();
+									}
 								}
-							}
-						});
+							});
+						}
+					}else {
+						System.out.println("Client list is empty");
 					}
+					
 				} else {
 					System.out.println("Trap receiver isn't start");
 				}
@@ -91,15 +97,7 @@ public class Main {
 			case 5:
 				if (trapReceiver.isStarted()) {
 					System.out.println("Client list: ");
-					for (Entry<Integer, Set<SnmpClient>> clientsByListenPort : trapReceiver.getClientsByListenPort()
-							.entrySet()) {
-						System.out.println("  Listen port " + clientsByListenPort.getKey() + ":");
-						for (SnmpClient client : clientsByListenPort.getValue()) {
-							System.out.println("    Client #" + client.getClientId());
-							System.out.println("    IP address: " + client.getAddress());
-							System.out.println("    Community: " + client.getCommunity());
-						}
-					}
+					trapReceiver.showClients();
 				} else {
 					System.out.println("Trap receiver isn't start");
 				}
@@ -109,15 +107,7 @@ public class Main {
 				if (trapReceiver.isStarted()) {
 					if (!trapReceiver.getClientsByListenPort().isEmpty()) {
 						System.out.println("Select client by#");
-						for (Entry<Integer, Set<SnmpClient>> clientsByListenPort : trapReceiver.getClientsByListenPort()
-								.entrySet()) {
-							System.out.println("  Listen port " + clientsByListenPort.getKey() + ":");
-							for (SnmpClient client : clientsByListenPort.getValue()) {
-								System.out.println("    Client #" + client.getClientId());
-								System.out.println("    IP address: " + client.getAddress());
-								System.out.println("    Community: " + client.getCommunity());
-							}
-						}
+						trapReceiver.showClients();
 						final int clientId = scanner.nextInt();
 						for (Set<SnmpClient> clients : trapReceiver.getClientsByListenPort().values()) {
 							clients.forEach(client -> {
@@ -188,6 +178,7 @@ public class Main {
 				}
 				SnmpSessionManager.getInstance().stopSnmpSession(SnmpSessionManager.SnmpSessionType.CLIENT);
 				statusProgramm = false;
+				
 				System.out.println("Exit");
 				break;
 			default:
@@ -197,6 +188,6 @@ public class Main {
 			}
 
 		} while (statusProgramm);
-
+		System.exit(0);
 	}
 }

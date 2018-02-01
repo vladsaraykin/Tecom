@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.snmp4j.MessageDispatcher;
 import org.snmp4j.MessageDispatcherImpl;
 import org.snmp4j.Snmp;
 import org.snmp4j.TransportMapping;
@@ -47,10 +46,8 @@ public class SnmpSessionManager {
 						transport.addTransportListener(session.getMessageDispatcher());
 						session.listen();
 					} catch (IOException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
-
 				}
 				break;
 			default:
@@ -67,8 +64,10 @@ public class SnmpSessionManager {
 		Snmp session = null;
 		try {
 			ThreadPool threadPool = ThreadPool.create(name, 10);
-			MessageDispatcher mtDispatcher = new MultiThreadedMessageDispatcher(threadPool,
+
+			MultiThreadedMessageDispatcher mtDispatcher = new MultiThreadedMessageDispatcher(threadPool,
 					new MessageDispatcherImpl());
+
 			mtDispatcher.addMessageProcessingModel(new MPv1());
 			mtDispatcher.addMessageProcessingModel(new MPv2c());
 			SecurityProtocols.getInstance().addDefaultProtocols();
