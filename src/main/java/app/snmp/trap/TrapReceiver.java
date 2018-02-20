@@ -39,11 +39,12 @@ public class TrapReceiver {
 			for (Set<SnmpClient> clients : clientsByListenPort.values()) {
 				allClients.addAll(clients);
 			}
-			
-			listener = new TrapReceiverListener();
+			if(listener == null) {
+				listener = new TrapReceiverListener();
+			}
 			listener.init(allClients);
 			listener.addListener(DEFAULT_LISTEN_PORT);
-			
+
 			status = true;
 			LOGGER.info("Trap receiver is started");
 		} else {
@@ -64,7 +65,9 @@ public class TrapReceiver {
 	}
 
 	public void registerClient(SnmpClient client) throws SnmpSessionException, IOException {
-		if (isStarted()) {
+			if(listener == null){
+				listener = new TrapReceiverListener();
+			}
 			listener.addListener(client.getTrapPort());
 			LOGGER.info("Register of client '" + client.getClientName() + "'...");
 			Set<SnmpClient> clients = clientsByListenPort.get(client.getTrapPort());
@@ -74,7 +77,7 @@ public class TrapReceiver {
 			clients.add(client);
 			clientsByListenPort.put(client.getTrapPort(), clients);
 			LOGGER.info("Client '" + client.getClientName() + "' is registered");
-		}
+
 	}
 
 	public void unregisterClient(SnmpClient client) throws SnmpSessionException, IOException {

@@ -60,7 +60,7 @@ public class Application {
 					trapReceiver.registerClient(snmpClient);
 					break;
 				case 4:
-					if (trapReceiver.isStarted() && !trapReceiver.getClientsByListenPort().isEmpty()) {
+					if (!trapReceiver.getClientsByListenPort().isEmpty()) {
 						Set<SnmpClient> allClients = new HashSet<>();
 						for (Set<SnmpClient> clients : trapReceiver.getClientsByListenPort().values()) {
 							allClients.addAll(clients);
@@ -92,7 +92,7 @@ public class Application {
 					}
 					break;
 				case 5:
-					if (trapReceiver.isStarted() && !trapReceiver.getClientsByListenPort().isEmpty()) {
+					if (!trapReceiver.getClientsByListenPort().isEmpty()) {
 						Set<SnmpClient> allClients = new HashSet<>();
 						for (Set<SnmpClient> clients : trapReceiver.getClientsByListenPort().values()) {
 							allClients.addAll(clients);
