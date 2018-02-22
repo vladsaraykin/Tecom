@@ -23,4 +23,8 @@ public class ConsoleScanner {
 		}
 		return result;
 	}
+
+	public void nextLine() {
+		scanner.nextLine();
+	}
 }
