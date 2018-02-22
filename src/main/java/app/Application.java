@@ -99,9 +99,10 @@ public class Application {
                     if (clientCommandSelected == null) {
                         do {
                             System.out.print("Enter command (1 -> GET, 2 -> GET-NEXT, 3 -> WALK, 4 -> SET, 5 -> EXIT): ");
-                            Integer correctValue = scanner.nextInt();
                             scanner.nextLine();
-                            if(correctValue != null){
+                            Integer correctValue = scanner.nextInt();
+
+                            if (correctValue != null) {
                                 clientCommandSelected = correctValue;
                                 break;
                             }
@@ -223,13 +224,14 @@ public class Application {
         if (requestPort == null) {
             do {
                 System.out.println("Enter correct value for the request port");
+                scanner.nextLine();
                 Integer correctValue;
                 correctValue = scanner.nextInt();
-                scanner.nextLine();
                 if (correctValue != null) {
                     requestPort = correctValue;
                     break;
                 }
+
             } while (true);
         }
         System.out.println();
@@ -239,11 +241,10 @@ public class Application {
         if (listenPort == null) {
             do {
                 System.out.println("Enter correct value for the trap port");
+                scanner.nextLine();
                 Integer correctValue;
                 correctValue = scanner.nextInt();
-                scanner.nextLine();
                 if (correctValue != null) {
-                    scanner.nextLine();
                     listenPort = correctValue;
                     break;
                 }
