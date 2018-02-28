@@ -39,11 +39,12 @@ public class TrapReceiver {
 			for (Set<SnmpClient> clients : clientsByListenPort.values()) {
 				allClients.addAll(clients);
 			}
-			
-			listener = new TrapReceiverListener();
+			if(listener == null) {
+				listener = new TrapReceiverListener();
+			}
 			listener.init(allClients);
 			listener.addListener(DEFAULT_LISTEN_PORT);
-			
+
 			status = true;
 			LOGGER.info("Trap receiver is started");
 		} else {
