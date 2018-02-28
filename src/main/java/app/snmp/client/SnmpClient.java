@@ -11,6 +11,9 @@ import org.snmp4j.mp.SnmpConstants;
 import org.snmp4j.smi.OID;
 import org.snmp4j.smi.Variable;
 import org.snmp4j.smi.VariableBinding;
+import org.snmp4j.util.DefaultPDUFactory;
+import org.snmp4j.util.TableEvent;
+import org.snmp4j.util.TableUtils;
 
 import app.logger.ConsoleLogger;
 import app.logger.Logger;
@@ -28,6 +31,7 @@ public class SnmpClient {
 	private static final String NO_SUCH_OBJECT = "noSuchObject";
 
 	private static int clientIdCount = 0;
+
 	private static int getNextClientId() {
 		clientIdCount++;
 		return clientIdCount;
@@ -44,13 +48,15 @@ public class SnmpClient {
 	private int retries = DEFAULT_SNMP_RETRIES;
 	private long timeout = DEFAULT_SNMP_TIMEOUT;
 
-	public SnmpClient(String address, String readCommunity, String writeCommunity, Integer requestPort, Integer trapPort) {
+	public SnmpClient(String address, String readCommunity, String writeCommunity, Integer requestPort,
+			Integer trapPort) {
 		this(address, readCommunity, writeCommunity, requestPort, trapPort, null);
 	}
 
-	public SnmpClient(String address, String readCommunity, String writeCommunity, Integer requestPort, Integer trapPort, String clientName) {
+	public SnmpClient(String address, String readCommunity, String writeCommunity, Integer requestPort,
+			Integer trapPort, String clientName) {
 		super();
-		
+
 		if (address == null) {
 			throw new IllegalArgumentException("The argument 'address' must not be null");
 		}
@@ -66,7 +72,7 @@ public class SnmpClient {
 		if (trapPort == null) {
 			throw new IllegalArgumentException("The argument 'trapPort' must not be null");
 		}
-		
+
 		this.clientId = getNextClientId();
 		this.address = address;
 		this.readCommunity = readCommunity;
@@ -120,12 +126,12 @@ public class SnmpClient {
 		if (oid == null) {
 			throw new IllegalArgumentException("The argument 'oid' must not be null");
 		}
-		
+
 		Snmp snmpSession = SnmpSessionManager.getInstance().getSession(SnmpSessionType.CLIENT);
 		PDU pdu = new PDU();
 		pdu.add(new VariableBinding(oid));
 		Target target = SnmpUtil.createReadTarget(this);
-		
+
 		PDU response = null;
 		try {
 			ResponseEvent responseEvent = snmpSession.get(pdu, target);
@@ -135,7 +141,7 @@ public class SnmpClient {
 		} catch (Exception e) {
 			throw new SnmpRequestException("Failed to get request for '" + oid.toDottedString() + "'", e);
 		}
-		
+
 		return response;
 	}
 
@@ -143,12 +149,12 @@ public class SnmpClient {
 		if (oid == null) {
 			throw new IllegalArgumentException("The argument 'oid' must not be null");
 		}
-		
+
 		Snmp snmpSession = SnmpSessionManager.getInstance().getSession(SnmpSessionType.CLIENT);
 		PDU pdu = new PDU();
 		pdu.add(new VariableBinding(oid));
 		Target target = SnmpUtil.createReadTarget(this);
-		
+
 		PDU response = null;
 		try {
 			ResponseEvent responseEvent = snmpSession.getNext(pdu, target);
@@ -167,17 +173,18 @@ public class SnmpClient {
 
 	public List<PDU> walkRequest(OID firstOid, OID lastOid) throws SnmpSessionException, SnmpRequestException {
 		List<PDU> results = new ArrayList<>();
-		if(firstOid == null) {
+		if (firstOid == null) {
 			return results;
 		}
-		
+
 		PDU firstResponse = getRequest(firstOid);
-		if (firstResponse != null && firstResponse.getVariable(firstOid) != null && !firstResponse.getVariable(firstOid).toString().contains(NO_SUCH_OBJECT)) {
+		if (firstResponse != null && firstResponse.getVariable(firstOid) != null
+				&& !firstResponse.getVariable(firstOid).toString().contains(NO_SUCH_OBJECT)) {
 			OID nextOid = firstOid;
 			PDU nextResponse = firstResponse;
 			do {
 				results.add(nextResponse);
-				
+
 				nextResponse = getNextRequest(nextOid);
 				if (nextResponse == null || nextResponse.getVariable(nextOid) == null
 						|| nextResponse.getVariable(nextOid).toString().contains(NO_SUCH_OBJECT)) {
@@ -186,12 +193,12 @@ public class SnmpClient {
 					}
 					break;
 				}
-				
+
 				if (nextOid.equals(lastOid)) {
 					results.add(nextResponse);
 					break;
 				}
-				
+
 				if (nextResponse.get(0) == null) {
 					LOGGER.warn("The request was interrupted on '" + nextOid.toDottedString() + "'");
 					break;
@@ -199,7 +206,7 @@ public class SnmpClient {
 				nextOid = nextResponse.get(0).getOid();
 			} while (true);
 		}
-		
+
 		return results;
 	}
 
@@ -208,7 +215,7 @@ public class SnmpClient {
 		PDU pdu = new PDU();
 		pdu.add(new VariableBinding(oid, variable));
 		Target target = SnmpUtil.createWriteTarget(this);
-		
+
 		boolean isOperationSucceeded = false;
 		try {
 			ResponseEvent responseEvent = snmpSession.set(pdu, target);
@@ -218,8 +225,35 @@ public class SnmpClient {
 		} catch (Exception e) {
 			throw new SnmpRequestException("Failed to set request for '" + oid.toDottedString() + "'", e);
 		}
-		
+
 		return isOperationSucceeded;
+	}
+
+	public List<TableEvent> getTable(OID[] columnOIDs) throws SnmpSessionException {
+		if ((columnOIDs == null) || (columnOIDs.length == 0)) {
+			LOGGER.error("No column OIDs specified");
+			return null;
+		}
+		Snmp snmpSession = SnmpSessionManager.getInstance().getSession(SnmpSessionType.CLIENT);
+		TableUtils tUtils = new TableUtils(snmpSession, new DefaultPDUFactory());
+		Target target = SnmpUtil.createReadTarget(this);
+		List<TableEvent> tableOid = tUtils.getTable(target, columnOIDs, null, null);
+
+		return tableOid;
+	}
+
+	public List<TableEvent> getTable(OID[] columnOIDs, OID lowerBoundIndex, OID upperBoundIndex)
+			throws SnmpSessionException {
+		if ((columnOIDs == null) || (columnOIDs.length == 0)) {
+			LOGGER.error("No column OIDs specified");
+			return null;
+		}
+		Snmp snmpSession = SnmpSessionManager.getInstance().getSession(SnmpSessionType.CLIENT);
+		TableUtils tUtils = new TableUtils(snmpSession, new DefaultPDUFactory());
+		Target target = SnmpUtil.createReadTarget(this);
+		List<TableEvent> tableOid = tUtils.getTable(target, columnOIDs, lowerBoundIndex, upperBoundIndex);
+
+		return tableOid;
 	}
 
 	private boolean checkResponse(ResponseEvent event) {

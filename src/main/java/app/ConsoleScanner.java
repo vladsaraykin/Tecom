@@ -27,4 +27,6 @@ public class ConsoleScanner {
 	public void nextLine() {
 		scanner.nextLine();
 	}
+	
+
 }
